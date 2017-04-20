@@ -7,7 +7,7 @@ from PyQt5.QtCore import (QByteArray, QDataStream, QIODevice, QMimeData, QPoint,
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, qApp, QWidget, QDesktopWidget, QScrollArea, QApplication ,  QDialog, QGroupBox, QSizePolicy,
             QLabel, QFrame, QFileDialog, QVBoxLayout, QHBoxLayout, QTextEdit, QGridLayout, QMessageBox, QPushButton, QLCDNumber, QSlider, QCheckBox)
-from PyQt5.QtGui import QIcon, QPixmap, QImage, QColor, QDrag, QPainter, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QImage, QColor, QDrag, QPainter, QPixmap, QScreen
 import image_adjustments as ia
 import cv2
 import numpy as np
@@ -73,10 +73,10 @@ class KaryogramUI(QMainWindow):
 
 
     def file_save(self):
-        path = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
-        print(path)
-        if path:
-            if not self.pic.pixmap().save(path):
+        p = self.form_widget.grab()
+        filename = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
+        if filename:
+            if not p.save(filename):
                 QMessageBox.warning(self, self.tr("Save Image"),
                      self.tr("Failed to save file at the specified location."))
 
@@ -105,34 +105,19 @@ class FormWidget(QWidget):
         ID = 0
         for row in range(5):
             for column in range(10):
-                # label = QPushButton('1')
                 if n<len(imageList):
-                    # path = "/home/vinod/workspace/python-GUI/process/thumbnail-"+ str(n) +".png"
                     path1 = folderPath + imageList[n]
-                    path2 = folderPath + imageList[n+1]
                     pixmap1 = QPixmap(path1)
-                    pixmap2 = QPixmap(path2)
-                    dragWidget = DragWidget(pixmap1, pixmap2)
-                    # label = QLabel('1')
-                    # label.setStyleSheet("border: 1px solid red");
-                    # label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-                    # label.setAlignment(Qt.AlignCenter);
-                    # label.setPixmap(pixmap)
+                    # pixmap2 = QPixmap(path2)
+                    dragWidget = DragWidget(pixmap1, str(n))
                     layout.addWidget(dragWidget, row, column)
-                    n = n+2
-            # row = row+1
-            # for index in range(12):
-            #     id_label = QLabel(str(ID))
-            #     id_label.setAlignment(Qt.AlignCenter);
-            #     layout.addWidget(id_label, row, index)
-            #     if(index%2==1):
-            #         ID = ID+1
+                    n = n+1
 
         self.horizontalGroupBox.setLayout(layout)
 
 # dragWidget contains 2 images which can be dragged and dropped to any other widget
 class DragWidget(QFrame):
-    def __init__(self, pixmap1, pixmap2, parent=None):
+    def __init__(self, pixmap1, idx, parent=None):
         super(DragWidget, self).__init__(parent)
 
         self.setMinimumSize(180, 180)
@@ -145,11 +130,17 @@ class DragWidget(QFrame):
         image1.show()
         image1.setAttribute(Qt.WA_DeleteOnClose)
 
-        image2 = QLabel(self)
-        image2.setPixmap(pixmap2)
-        image2.move(100, 20)
-        image2.show()
-        image2.setAttribute(Qt.WA_DeleteOnClose)
+
+        # image2 = QLabel(self)
+        # image2.setPixmap(pixmap2)
+        # image2.move(100, 20)
+        # image2.show()
+        # image2.setAttribute(Qt.WA_DeleteOnClose)
+
+        index = QLabel(idx, self)
+        index.move(10, 160)
+        index.setStyleSheet('color: red')
+        index.show()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
