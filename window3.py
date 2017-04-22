@@ -29,7 +29,7 @@ class KaryogramUI(QMainWindow):
         self.setWindowTitle(self.title)
         # logo
         self.setWindowIcon(QIcon('icons/logo.png'))
-
+        self.form_widget = None
         self.show()
 
     def setMenuBar(self):
@@ -73,12 +73,14 @@ class KaryogramUI(QMainWindow):
 
 
     def file_save(self):
-        p = self.form_widget.grab()
-        filename = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
-        if filename:
-            if not p.save(filename):
-                QMessageBox.warning(self, self.tr("Save Image"),
-                     self.tr("Failed to save file at the specified location."))
+        if self.form_widget is not None:
+            p = self.form_widget.scroll.widget().grab()
+            filename = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
+            if filename :
+                if not p.save(filename):
+                    QMessageBox.warning(self, self.tr("Save Image"),
+                        self.tr("Failed to save file at the specified location."))
+        # self.setImageLayout(dir_)
 
 
 class FormWidget(QWidget):
@@ -98,22 +100,65 @@ class FormWidget(QWidget):
         folderPath = folderPath+"/"
         imageList = os.listdir(folderPath)
         self.horizontalGroupBox = QGroupBox()
+        # scroll
+        self.scroll = QScrollArea()
         layout = QGridLayout()
 
-        layout.setContentsMargins(5, 5,5,5)
+        # layout.setContentsMargins(5, 5,5,5)
         n = 1
         ID = 0
-        for row in range(5):
-            for column in range(10):
-                if n<len(imageList):
-                    path1 = folderPath + imageList[n]
-                    pixmap1 = QPixmap(path1)
-                    # pixmap2 = QPixmap(path2)
+
+
+        # layout.setColumnStretch(0, 3);
+        for col in range(5):
+            # print(column)
+            layout.setColumnStretch(col, 10)
+        for column in range(5):
+            if n<len(imageList):
+                path1 = folderPath + imageList[n]
+                pixmap1 = QPixmap(path1)
+                # pixmap2 = QPixmap(path2)
+                dragWidget = DragWidget(pixmap1, str(n))
+                layout.addWidget(dragWidget, 0, column)
+                n = n+1
+        for column in range(7):
+            if n<len(imageList):
+                path1 = folderPath + imageList[n]
+                pixmap1 = QPixmap(path1)
+                # pixmap2 = QPixmap(path2)
+                dragWidget = DragWidget(pixmap1, str(n))
+                layout.addWidget(dragWidget, 1, column)
+                n = n+1
+        for column in range(6):
+            if n<len(imageList):
+                path1 = folderPath + imageList[n]
+                pixmap1 = QPixmap(path1)
+                # pixmap2 = QPixmap(path2)
+                dragWidget = DragWidget(pixmap1, str(n))
+                layout.addWidget(dragWidget, 3, column)
+                n = n+1
+        for column in range(6):
+            if n<len(imageList):
+                path1 = folderPath + imageList[n]
+                pixmap1 = QPixmap(path1)
+                # pixmap2 = QPixmap(path2)
+                if(column==4):
+                    dragWidget = DragWidget(pixmap1, 'X')
+                elif(column==5):
+                    dragWidget = DragWidget(pixmap1, 'Y')
+                else:
                     dragWidget = DragWidget(pixmap1, str(n))
-                    layout.addWidget(dragWidget, row, column)
-                    n = n+1
+                layout.addWidget(dragWidget, 4, column)
+                n = n+1
+
+
 
         self.horizontalGroupBox.setLayout(layout)
+        self.scroll.setWidget(self.horizontalGroupBox)
+        self.scroll.setWidgetResizable(True)
+        # scroll.setFixedHeight(400)
+        self.v_layout = QVBoxLayout(self)
+        self.v_layout.addWidget(self.scroll)
 
 # dragWidget contains 2 images which can be dragged and dropped to any other widget
 class DragWidget(QFrame):
