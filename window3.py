@@ -108,18 +108,22 @@ class FormWidget(QWidget):
         n = 1
         ID = 0
 
-
-        # layout.setColumnStretch(0, 3);
-        for col in range(5):
-            # print(column)
-            layout.setColumnStretch(col, 10)
+        layout1 = QHBoxLayout()
+        layout2 = QHBoxLayout()
+        layout3 = QHBoxLayout()
+        layout4 = QHBoxLayout()
+        # # layout.setColumnStretch(0, 3);
+        # for col in range(5):
+        #     # print(column)
+        #     layout.setColumnStretch(col, 10)
         for column in range(5):
             if n<len(imageList):
                 path1 = folderPath + imageList[n]
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
                 dragWidget = DragWidget(pixmap1, str(n))
-                layout.addWidget(dragWidget, 0, column)
+                # layout.addWidget(dragWidget, 0, column)
+                layout1.addWidget(dragWidget)
                 n = n+1
         for column in range(7):
             if n<len(imageList):
@@ -127,7 +131,8 @@ class FormWidget(QWidget):
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
                 dragWidget = DragWidget(pixmap1, str(n))
-                layout.addWidget(dragWidget, 1, column)
+                layout2.addWidget(dragWidget)
+                # layout.addWidget(dragWidget, 1, column)
                 n = n+1
         for column in range(6):
             if n<len(imageList):
@@ -135,7 +140,8 @@ class FormWidget(QWidget):
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
                 dragWidget = DragWidget(pixmap1, str(n))
-                layout.addWidget(dragWidget, 3, column)
+                layout3.addWidget(dragWidget)
+                # layout.addWidget(dragWidget, 3, column)
                 n = n+1
         for column in range(6):
             if n<len(imageList):
@@ -148,11 +154,15 @@ class FormWidget(QWidget):
                     dragWidget = DragWidget(pixmap1, 'Y')
                 else:
                     dragWidget = DragWidget(pixmap1, str(n))
-                layout.addWidget(dragWidget, 4, column)
+                layout4.addWidget(dragWidget)
+                # layout.addWidget(dragWidget, 4, column)
                 n = n+1
 
 
-
+        layout.addLayout(layout1, 0, 0)
+        layout.addLayout(layout2, 1, 0)
+        layout.addLayout(layout3, 2, 0)
+        layout.addLayout(layout4, 3, 0)
         self.horizontalGroupBox.setLayout(layout)
         self.scroll.setWidget(self.horizontalGroupBox)
         self.scroll.setWidgetResizable(True)
