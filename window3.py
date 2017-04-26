@@ -105,7 +105,7 @@ class FormWidget(QWidget):
         layout = QGridLayout()
 
         # layout.setContentsMargins(5, 5,5,5)
-        n = 1
+        n = 0
         ID = 0
 
         layout1 = QHBoxLayout()
@@ -121,42 +121,47 @@ class FormWidget(QWidget):
                 path1 = folderPath + imageList[n]
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
-                dragWidget = DragWidget(pixmap1, str(n))
+                dragWidget = DragWidget(pixmap1, str(n+1))
                 # layout.addWidget(dragWidget, 0, column)
                 layout1.addWidget(dragWidget)
-                n = n+1
+            n = n+1
         for column in range(7):
             if n<len(imageList):
                 path1 = folderPath + imageList[n]
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
-                dragWidget = DragWidget(pixmap1, str(n))
+                dragWidget = DragWidget(pixmap1, str(n+1))
                 layout2.addWidget(dragWidget)
                 # layout.addWidget(dragWidget, 1, column)
-                n = n+1
+            n = n+1
         for column in range(6):
             if n<len(imageList):
                 path1 = folderPath + imageList[n]
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
-                dragWidget = DragWidget(pixmap1, str(n))
+                dragWidget = DragWidget(pixmap1, str(n+1))
                 layout3.addWidget(dragWidget)
                 # layout.addWidget(dragWidget, 3, column)
-                n = n+1
+            n = n+1
         for column in range(6):
+
             if n<len(imageList):
+                print(column)
                 path1 = folderPath + imageList[n]
                 pixmap1 = QPixmap(path1)
                 # pixmap2 = QPixmap(path2)
                 if(column==4):
+                    # print("Asda")
                     dragWidget = DragWidget(pixmap1, 'X')
                 elif(column==5):
+                    # print(column)
+                    # print("asdafafs")
                     dragWidget = DragWidget(pixmap1, 'Y')
                 else:
-                    dragWidget = DragWidget(pixmap1, str(n))
+                    dragWidget = DragWidget(pixmap1, str(n+1))
                 layout4.addWidget(dragWidget)
                 # layout.addWidget(dragWidget, 4, column)
-                n = n+1
+            n = n+1
 
 
         layout.addLayout(layout1, 0, 0)
