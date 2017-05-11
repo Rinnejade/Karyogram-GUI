@@ -1,16 +1,18 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+
 import sys
 import os
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import (QByteArray, QDataStream, QIODevice, QMimeData, QPoint, Qt, QRect)
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, qApp, QWidget, QDesktopWidget, QApplication ,
-            QLabel, QFileDialog, QVBoxLayout, QHBoxLayout, QTextEdit, QGridLayout, QMessageBox, QPushButton, QLCDNumber, QSlider, QCheckBox)
-from PyQt5.QtGui import QIcon, QPixmap, QImage
+from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, qApp, QWidget, QFrame,QGroupBox, QDesktopWidget, QApplication ,
+            QLabel, QFileDialog, QVBoxLayout, QHBoxLayout, QMenu, QTextEdit, QColorDialog, QScrollArea, QInputDialog, QGridLayout, QMessageBox, QPushButton, QLCDNumber, QSlider, QCheckBox)
+from PyQt5.QtGui import QIcon, QPixmap, QImage,QColor, QImageWriter, qRgb, QPainter, QPen, QDrag, QPainter, QPixmap, QScreen
 import image_adjustments as ia
 import cv2
 import numpy as np
+import test
 
 
 class KaryogramUI(QMainWindow):
@@ -22,21 +24,14 @@ class KaryogramUI(QMainWindow):
 
     def initUI(self):
 
-        self.pic = QLabel("",self)
 
         self.setMenuBar()
 
-
-        # toolbar = self.addToolBar('open')
-        # toolbar.addAction(openFile)
-
-        self.createLayout()
-        # size and position
         self.resize(1200, 800)
-        self.center()
         self.setWindowTitle(self.title)
         # logo
         self.setWindowIcon(QIcon('icons/logo.png'))
+        self.form_widget = None
         self.show()
 
     def setMenuBar(self):
@@ -66,149 +61,211 @@ class KaryogramUI(QMainWindow):
         fileMenu.addAction(saveFile)
         fileMenu.addAction(exitAction)
 
-    # centering the window
-    def center(self):
+    def setImageLayout(self, folderPath):
+        self.form_widget = FormWidget(self, folderPath)
 
-        qr = self.frameGeometry()
-        cp = QDesktopWidget().availableGeometry().center()
-        qr.moveCenter(cp)
-        self.move(qr.topLeft())
-
-    def createLayout(self):
-        self.l1 = QLabel("Brightness", self)
-        self.l2 = QLabel("Contrast", self)
-        self.l3 = QLabel("Alpha Value", self)
-        self.lcd1 = QLCDNumber(self)
-        self.sld1 = QSlider(Qt.Horizontal, self)
-        self.sld1.setMaximum(200)
-        self.lcd2 = QLCDNumber(self)
-        self.sld2 = QSlider(Qt.Horizontal, self)
-        self.sld2.setValue(1)
-        self.sld2.setMinimum(1)
-        self.sld2.setRange(1, 10)
-        self.lcd3 = QLCDNumber(self)
-        self.sld3 = QSlider(Qt.Horizontal, self)
-
-        self.histogram_checkBox = QCheckBox("Histogram", self)
-        self.histogram_checkBox.toggle()
-        # self.noise_checkBox = QCheckBox("Noise Remove", self)
-
-        self.nextButton = QPushButton("Next", self)
-        # cancelButton = QPushButton("Cancel")
-
-        base = 50
-        self.l1.move(1200, base)
-        self.lcd1.move(1200, base+30)
-        self.sld1.move(1200, base+60)
-        base+= 120
-        self.l2.move(1200, base)
-        self.lcd2.move(1200, base+30)
-        self.sld2.move(1200, base+60)
-
-        base+= 120
-        self.l3.move(1200, base)
-        self.lcd3.move(1200, base+30)
-        self.sld3.move(1200, base+60)
-
-        # connect widgets to functionalities
-        self.sld1.valueChanged.connect(self.adjust_image)
-        self.sld2.valueChanged.connect(self.adjust_image)
-        self.sld3.valueChanged.connect(self.adjust_image)
-        self.histogram_checkBox.stateChanged.connect(self.adjust_image)
-        self.nextButton.clicked.connect(self.goToNextPage)
-        # self.noise_checkBox.stateChanged.connect(self.noise_check)
+        # paint window
 
 
-        base+= 120
-        self.histogram_checkBox.move(1200, base+30)
-        # self.noise_checkBox.move(1200, base+60)
-        self.nextButton.move(1200, base+200)
+        # add all main to the main vLayout
+        # self.scribbleArea.setStyleSheet("background-color: rgb(255,0,0); margin:5px; border:1px solid rgb(0, 255, 0); ")
+        self.mainLayout = QGridLayout()
+        self.mainLayout.addWidget(self.form_widget, 0, 0)
 
+        # central widget
+        self.centralWidget = QWidget()
+        self.centralWidget.setLayout(self.mainLayout)
+
+        # set central widget
+        self.setCentralWidget(self.centralWidget)
+        # self.setCentralWidget(self.form_widget)
+        self.show()
 
     def file_open(self):
-        name = QFileDialog.getOpenFileName(self,'Open file',
-         '.',"Image files (*.jpg *.jpeg *.png)")[0]
-        self.imageName = name
-        print(name)
-        pixmap = QPixmap(name)
-        self.display_image(pixmap)
+        dir_ = QFileDialog.getExistingDirectory(None, 'Select a folder:', '.', QFileDialog.ShowDirsOnly)
+        # print(dir_)
+        self.setImageLayout(dir_)
+        # pixmap = QPixmap(name)
+        # self.display_image(pixmap)
 
 
     def file_save(self):
-        path = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
-        print(path)
-        if path and self.pic.pixmap() is not None:
-            if not self.pic.pixmap().save(path):
-                QMessageBox.warning(self, self.tr("Save Image"),
-                     self.tr("Failed to save file at the specified location."))
+        if self.form_widget is not None:
+            p = self.form_widget.scroll.widget().grab()
+            filename = QFileDialog.getSaveFileName(self, 'Save File', '.',"Image files (*.jpg *.jpeg *.png)")[0]
+            if filename :
+                if not p.save(filename):
+                    QMessageBox.warning(self, self.tr("Save Image"),
+                        self.tr("Failed to save file at the specified location."))
+        # self.setImageLayout(dir_)
 
-    def display_image(self, pixmap):
 
-        # pixmap_resized = pixmap.scaled(900, 600, QtCore.Qt.KeepAspectRatio)
-        self.pic.setScaledContents(True);
-        self.pic.move(100,100)
-        self.pic.resize(900,550)
-        self.pic.setPixmap(pixmap)
+class FormWidget(QWidget):
 
-        self.pic.show() # You were missing this.
-        # pixmap = ""
+    def __init__(self, parent, folderPath):
+        super(FormWidget, self).__init__(parent)
+        self.setGeometry(300, 300, 1200, 300);
 
-    # def noise_check(self, state):
-    #     QpixmapImg = self.getImage()
-    #     cv2Img = self.convertQpixmapToMat(QpixmapImg)
-    #     if state == Qt.Checked:
-    #         cv2Img = ia.hist_eqn(cv2Img)
-    #     updated_Qpixmap = QPixmap("Out.jpg")
-    #     self.display_image(updated_Qpixmap)
 
-    def adjust_image(self, state):
-        self.sld1.valueChanged.connect(self.lcd1.display)
-        self.sld2.valueChanged.connect(self.lcd2.display)
-        self.sld3.valueChanged.connect(self.lcd3.display)
-        QpixmapImg = self.getImage()
-        cv2Img = self.convertQpixmapToMat(QpixmapImg)
-        # adjust brightness
-        brightness_value = self.sld1.value()
-        cv2Img = ia.control_brightness(cv2Img, brightness_value)
-        # adjust contrast
-        contrast_value = self.sld2.value()
-        cv2Img = ia.control_contrast(cv2Img, contrast_value)
-        # histogram_equalisation
-        if state == Qt.Checked:
-            cv2Img = ia.hist_eqn(cv2Img)
-        updated_Qpixmap = QPixmap("Out.jpg")
-        self.display_image(updated_Qpixmap)
+        self.imageList = self.getImageList(folderPath)
+        self.ScribbleWindow = test.ScribbleWindow()
+        self.scroll = QScrollArea()
+        self.layout = QGridLayout()
+        self.layout1 = QGridLayout()
+        self.layout2 = QGridLayout()
 
-    def getImage(self):
-        img = QPixmap(self.imageName)
-        return img
+        self.createGridLayout()
 
-    def convertQpixmapToMat(self, incomingImage):
-        incomingImage = incomingImage.toImage()
-        incomingImage = incomingImage.convertToFormat(4)
 
-        width = incomingImage.width()
-        height = incomingImage.height()
-        ptr = incomingImage.constBits()
-        ptr.setsize(incomingImage.byteCount())
-        arr = np.array(ptr).reshape(height, width, 4)  #  Copies the data
-        return arr
+        windowLayout = QVBoxLayout()
+        windowLayout.addWidget(self.horizontalGroupBox)
+        self.setLayout(windowLayout)
 
-    # def convertMatToQpixmap(self, cv_img):
-    #
-    #     # Notice the dimensions.
-    #     height, width, bytesPerComponent = cv_img.shape
-    #     bytesPerLine = width * 3;
-    #     # Convert to RGB for QImage.
-    #     cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB, cv_img)
-    #     qImg = QImage(cv_img.data, width, height, bytesPerLine, QImage.Format_RGB888)
-    #     pix = QPixmap.fromImage(qImg)
-    #     return pix
+        # self.setLayout(self.layout)
+    def getImageList(self,folderPath):
+        folderPath = folderPath+"/"
+        pathList = os.listdir(folderPath)
+        imageList = list()
+        for i in range(len(pathList)):
+            path = folderPath + pathList[i]
+            pixmap = QPixmap(path)
+            imageList.insert(len(imageList), pixmap)
+        return imageList;
 
-    def goToNextPage(self):
-        self.close()
-        self.field_params = params
-        self.show()
+    def createGridLayout(self):
+        # folderPath = "/home/vinod/workspace/python-GUI/process/"
+
+        self.horizontalGroupBox = QGroupBox()
+        # scroll
+        # layout.setContentsMargins(5, 5,5,5)
+        n = 0
+        ID = 0
+
+        self.layout1.addWidget(self.ScribbleWindow, 0, 0);
+
+        # layout.setColumnStretch(0, 3);
+        for row in range(5):
+            for col in range(10):
+                if (n<len(self.imageList)):
+                    pixmap = self.imageList[n]
+                    # pixmap2 = QPixmap(path2)
+                    dragWidget = DragWidget(pixmap, str(n+1))
+                    self.layout2.addWidget(dragWidget, row, col)
+                    n = n + 1
+
+
+        self.layout.addLayout(self.layout1, 0, 0)
+        self.layout.addLayout(self.layout2, 1, 0)
+        self.horizontalGroupBox.setLayout(self.layout)
+        self.scroll.setWidget(self.horizontalGroupBox)
+        self.scroll.setWidgetResizable(True)
+        # scroll.setFixedHeight(400)
+        self.v_layout = QVBoxLayout(self)
+        self.v_layout.addWidget(self.scroll)
+
+# dragWidget contains 2 images which can be dragged and dropped to any other widget
+class DragWidget(QFrame):
+    def __init__(self, pixmap1, idx, parent=None):
+        super(DragWidget, self).__init__(parent)
+
+        self.setMinimumSize(180, 180)
+        self.setFrameStyle(QFrame.Sunken | QFrame.StyledPanel)
+        self.setAcceptDrops(True)
+
+        image1 = QLabel(self)
+        image1.setPixmap(pixmap1)
+        image1.move(20, 20)
+        image1.show()
+        image1.setAttribute(Qt.WA_DeleteOnClose)
+
+
+        # image2 = QLabel(self)
+        # image2.setPixmap(pixmap2)
+        # image2.move(100, 20)
+        # image2.show()
+        # image2.setAttribute(Qt.WA_DeleteOnClose)
+
+        index = QLabel('', self)
+        index.move(10, 160)
+        index.setStyleSheet('color: red')
+        index.show()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasFormat('application/x-dnditemdata'):
+            if event.source() == self:
+                event.setDropAction(Qt.MoveAction)
+                event.accept()
+            else:
+                event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    dragMoveEvent = dragEnterEvent
+
+    def dropEvent(self, event):
+        if event.mimeData().hasFormat('application/x-dnditemdata'):
+            itemData = event.mimeData().data('application/x-dnditemdata')
+            dataStream = QDataStream(itemData, QIODevice.ReadOnly)
+
+            pixmap = QPixmap()
+            offset = QPoint()
+            dataStream >> pixmap >> offset
+
+
+            newIcon = QLabel(self)
+            newIcon.setPixmap(pixmap)
+            newIcon.move(event.pos() - offset)
+            newIcon.show()
+            newIcon.setAttribute(Qt.WA_DeleteOnClose)
+
+            if event.source() == self:
+                event.setDropAction(Qt.MoveAction)
+                event.accept()
+            else:
+                event.setDropAction(Qt.MoveAction)
+                event.accept()
+
+                # event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def mousePressEvent(self, event):
+        child = self.childAt(event.pos())
+        if not child:
+            return
+
+        pixmap = QPixmap(child.pixmap())
+
+        # convert qpixmap to qimage and set image in scribblearea
+        img = pixmap.toImage()
+        self.parent().parent().parent().parent().ScribbleWindow.scribbleArea.setImage(img, True)
+
+        itemData = QByteArray()
+        dataStream = QDataStream(itemData, QIODevice.WriteOnly)
+        dataStream << pixmap << QPoint(event.pos() - child.pos())
+
+        mimeData = QMimeData()
+        mimeData.setData('application/x-dnditemdata', itemData)
+
+        drag = QDrag(self)
+        drag.setMimeData(mimeData)
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(event.pos() - child.pos())
+
+        tempPixmap = QPixmap(pixmap)
+        painter = QPainter()
+        painter.begin(tempPixmap)
+        painter.fillRect(pixmap.rect(), QColor(127, 127, 127, 127))
+        painter.end()
+
+        child.setPixmap(tempPixmap)
+
+        if drag.exec_(Qt.CopyAction | Qt.MoveAction, Qt.CopyAction) == Qt.MoveAction:
+            child.close()
+        else:
+            child.show()
+            child.setPixmap(pixmap)
+
 
 if __name__ == '__main__':
 
